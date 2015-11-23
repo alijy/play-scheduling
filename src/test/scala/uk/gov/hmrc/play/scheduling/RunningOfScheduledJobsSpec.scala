@@ -88,6 +88,34 @@ class RunningOfScheduledJobsSpec extends UnitSpec with Eventually with DelayProc
       capturedRunnable.run()
       testScheduledJob should be ('executed)
     }
+
+    "set up the scheduled job to run in the specified window using between" in new TestCase {
+      var capturedRunnable: Runnable = _
+      override val testScheduledJob = new TestScheduledJob {
+        override lazy val between = Some(("17:20", "17:32"))
+        var executed = false
+        override def execute(implicit ec: ExecutionContext ) = {
+          executed = true
+          Future.successful(this.Result("done"))
+        }
+      }
+      val runner = new RunningOfScheduledJobs {
+        override def scheduler(app: Application): Scheduler = new StubbedScheduler {
+          override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext) = {
+            capturedRunnable = runnable
+            null
+          }
+        }
+
+        val scheduledJobs = Seq(testScheduledJob)
+      }
+
+      runner.onStart(FakeApplication())
+
+      testScheduledJob should not be 'executed
+      capturedRunnable.run()
+      testScheduledJob should not be 'executed
+    }
   }
 
   "When stopping the app, the scheduled job runner" should {

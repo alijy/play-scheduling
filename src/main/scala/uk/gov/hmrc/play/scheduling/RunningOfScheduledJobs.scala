@@ -18,6 +18,7 @@ package uk.gov.hmrc.play.scheduling
 
 import akka.actor.{Cancellable, Scheduler}
 import org.apache.commons.lang3.time.StopWatch
+import org.joda.time.{DateTime, DateTimeUtils}
 import play.api.libs.concurrent.Akka
 import play.api.{Application, GlobalSettings, Logger}
 import scala.concurrent.Await
@@ -35,20 +36,42 @@ trait RunningOfScheduledJobs extends GlobalSettings {
 
     implicit val ec = play.api.libs.concurrent.Execution.defaultContext
 
-    Logger.info(s"Scheduling jobs: $scheduledJobs")
+    def between(start: String, end: String) = {
+      val now = DateTime.now()
+      val (startHour, startMinute) = (start.split(":")(0).toInt, start.split(":")(1).toInt)
+      val (endHour, endMinute) = (end.split(":")(0).toInt, end.split(":")(1).toInt)
+      val startTime = now.withHourOfDay(startHour)
+        .withMinuteOfHour(startMinute)
+        .withSecondOfMinute(0)
+        .withMillisOfSecond(0)
+      val endTime = now.withHourOfDay(endHour)
+        .withMinuteOfHour(endMinute)
+        .withSecondOfMinute(0)
+        .withMillisOfSecond(0)
+
+      now.isAfter(startTime) && now.isBefore(endTime)
+    }
+
     cancellables = scheduledJobs.map { job =>
       scheduler(app).schedule(job.initialDelay, job.interval) {
+
         val stopWatch = new StopWatch
         stopWatch.start()
-        Logger.info(s"Executing job ${job.name}")
 
-        job.execute.onComplete {
-          case Success(job.Result(message)) =>
-            stopWatch.stop()
-            Logger.info(s"Completed job ${job.name} in $stopWatch: $message")
-          case Failure(throwable) =>
-            stopWatch.stop()
-            Logger.error(s"Exception running job ${job.name} after $stopWatch", throwable)
+        if (job.between.isEmpty || (job.between.isDefined && between(job.between.get._1, job.between.get._2))) {
+
+          Logger.info(s"Scheduling jobs: $job")
+
+          Logger.info(s"Executing job ${job.name}")
+
+          job.execute.onComplete {
+            case Success(job.Result(message)) =>
+              stopWatch.stop()
+              Logger.info(s"Completed job ${job.name} in $stopWatch: $message")
+            case Failure(throwable) =>
+              stopWatch.stop()
+              Logger.error(s"Exception running job ${job.name} after $stopWatch", throwable)
+          }
         }
       }
     }

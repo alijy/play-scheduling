@@ -32,5 +32,7 @@ trait ScheduledJob {
 
   def interval:FiniteDuration
 
+  def between: Option[(String, String)] = None
+
   override def toString() = s"$name after $initialDelay every $interval"
 }
