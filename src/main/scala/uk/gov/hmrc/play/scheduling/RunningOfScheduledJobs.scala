@@ -16,65 +16,86 @@
 
 package uk.gov.hmrc.play.scheduling
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{Cancellable, Scheduler}
 import org.apache.commons.lang3.time.StopWatch
-import org.joda.time.{DateTime, DateTimeUtils}
+import org.joda.time.{DateTime, Seconds}
 import play.api.libs.concurrent.Akka
 import play.api.{Application, GlobalSettings, Logger}
-import scala.concurrent.Await
+
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success}
 
 trait RunningOfScheduledJobs extends GlobalSettings {
   def scheduler(app: Application): Scheduler = Akka.system(app).scheduler
+
   val scheduledJobs: Seq[ScheduledJob]
 
-  private[scheduling] var cancellables : Seq[Cancellable] = Seq.empty
+  private[scheduling] var cancellables: Seq[Cancellable] = Seq.empty
 
   override def onStart(app: Application) {
     super.onStart(app)
 
     implicit val ec = play.api.libs.concurrent.Execution.defaultContext
 
-    def between(start: String, end: String) = {
-      val now = DateTime.now()
-      val (startHour, startMinute) = (start.split(":")(0).toInt, start.split(":")(1).toInt)
-      val (endHour, endMinute) = (end.split(":")(0).toInt, end.split(":")(1).toInt)
-      val startTime = now.withHourOfDay(startHour)
-        .withMinuteOfHour(startMinute)
+    def toDateTime(schedule: String)(implicit now: DateTime = DateTime.now): DateTime = {
+      val timeArr = schedule.split(":")
+      val (hour, minute) = (timeArr(0).toInt, timeArr(1).toInt)
+      now.withHourOfDay(hour)
+        .withMinuteOfHour(minute)
         .withSecondOfMinute(0)
         .withMillisOfSecond(0)
-      val endTime = now.withHourOfDay(endHour)
-        .withMinuteOfHour(endMinute)
-        .withSecondOfMinute(0)
-        .withMillisOfSecond(0)
-
-      now.isAfter(startTime) && now.isBefore(endTime)
     }
 
-    cancellables = scheduledJobs.map { job =>
+    class ScheduledJobWithDelay(job: ScheduledJob, delay: Int) extends ScheduledJob {
+      def name = job.name
+
+      def execute(implicit ec: ExecutionContext) = execute(ec)
+
+      def interval = job.interval
+
+      def initialDelay = FiniteDuration(delay, TimeUnit.SECONDS)
+
+      def isRunning = job.isRunning
+    }
+
+    def executeScheduler(job: ScheduledJob): Cancellable = {
       scheduler(app).schedule(job.initialDelay, job.interval) {
 
         val stopWatch = new StopWatch
         stopWatch.start()
 
-        if (job.between.isEmpty || (job.between.isDefined && between(job.between.get._1, job.between.get._2))) {
+        Logger.info(s"Scheduling jobs: $job")
 
-          Logger.info(s"Scheduling jobs: $job")
+        Logger.info(s"Executing job ${job.name}")
 
-          Logger.info(s"Executing job ${job.name}")
-
-          job.execute.onComplete {
-            case Success(job.Result(message)) =>
-              stopWatch.stop()
-              Logger.info(s"Completed job ${job.name} in $stopWatch: $message")
-            case Failure(throwable) =>
-              stopWatch.stop()
-              Logger.error(s"Exception running job ${job.name} after $stopWatch", throwable)
-          }
+        job.execute.onComplete {
+          case Success(job.Result(message)) =>
+            stopWatch.stop()
+            Logger.info(s"Completed job ${job.name} in $stopWatch: $message")
+          case Failure(throwable) =>
+            stopWatch.stop()
+            Logger.error(s"Exception running job ${job.name} after $stopWatch", throwable)
         }
       }
     }
+
+    cancellables = scheduledJobs.map { job =>
+
+      (job.specifiedSchedules) match {
+        case Some(specifiedSchedule) => {
+          for {
+            sortedSchedule <- specifiedSchedule.split(",").map(_.trim).sorted.map(toDateTime);
+            delay <- Seconds.secondsBetween(DateTime.now, sortedSchedule).getSeconds;
+            jobWithDelay <- new ScheduledJobWithDelay(job, delay)
+          } yield executeScheduler(jobWithDelay)
+        }
+        case None => executeScheduler(job)
+      }
+    }.flatten
+
   }
 
   override def onStop(app: Application) {
@@ -82,7 +103,7 @@ trait RunningOfScheduledJobs extends GlobalSettings {
     cancellables.foreach(_.cancel())
     scheduledJobs.foreach { job =>
       Logger.info(s"Checking if job ${job.configKey} is running")
-      while(Await.result(job.isRunning, 5.seconds)) {
+      while (Await.result(job.isRunning, 5.seconds)) {
         Logger.warn(s"Waiting for job ${job.configKey} to finish")
         Thread.sleep(1000)
       }

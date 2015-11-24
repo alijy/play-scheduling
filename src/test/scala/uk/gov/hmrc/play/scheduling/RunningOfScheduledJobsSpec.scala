@@ -92,7 +92,7 @@ class RunningOfScheduledJobsSpec extends UnitSpec with Eventually with DelayProc
     "set up the scheduled job to run in the specified window using between" in new TestCase {
       var capturedRunnable: Runnable = _
       override val testScheduledJob = new TestScheduledJob {
-        override lazy val between = Some(("17:20", "17:32"))
+        override lazy val specifiedSchedules = Some("17:20, 17:32")
         var executed = false
         override def execute(implicit ec: ExecutionContext ) = {
           executed = true
