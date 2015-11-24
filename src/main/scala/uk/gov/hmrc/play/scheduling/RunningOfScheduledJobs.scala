@@ -25,7 +25,7 @@ import play.api.libs.concurrent.Akka
 import play.api.{Application, GlobalSettings, Logger}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Future, Await, ExecutionContext}
 import scala.util.{Failure, Success}
 
 trait RunningOfScheduledJobs extends GlobalSettings {
@@ -41,7 +41,7 @@ trait RunningOfScheduledJobs extends GlobalSettings {
     implicit val ec = play.api.libs.concurrent.Execution.defaultContext
 
     def toDateTime(schedule: String)(implicit now: DateTime = DateTime.now): DateTime = {
-      val timeArr = schedule.split(":")
+      val timeArr = schedule.trim.split(":")
       val (hour, minute) = (timeArr(0).toInt, timeArr(1).toInt)
       now.withHourOfDay(hour)
         .withMinuteOfHour(minute)
@@ -52,7 +52,7 @@ trait RunningOfScheduledJobs extends GlobalSettings {
     class ScheduledJobWithDelay(job: ScheduledJob, delay: Int) extends ScheduledJob {
       def name = job.name
 
-      def execute(implicit ec: ExecutionContext) = execute(ec)
+      def execute(implicit ec: ExecutionContext) = Future.successful(Result("done"))
 
       def interval = job.interval
 
@@ -85,14 +85,13 @@ trait RunningOfScheduledJobs extends GlobalSettings {
     cancellables = scheduledJobs.map { job =>
 
       (job.specifiedSchedules) match {
-        case Some(specifiedSchedule) => {
+        case Some(specifiedSchedule) =>
           for {
-            sortedSchedule <- specifiedSchedule.split(",").map(_.trim).sorted.map(toDateTime);
-            delay <- Seconds.secondsBetween(DateTime.now, sortedSchedule).getSeconds;
-            jobWithDelay <- new ScheduledJobWithDelay(job, delay)
+            convertedSchedule <- specifiedSchedule.split(",").map(toDateTime);
+            delay = Seconds.secondsBetween(DateTime.now, convertedSchedule).getSeconds;
+            jobWithDelay = new ScheduledJobWithDelay(job, delay)
           } yield executeScheduler(jobWithDelay)
-        }
-        case None => executeScheduler(job)
+        case None => Array(executeScheduler(job))
       }
     }.flatten
 
