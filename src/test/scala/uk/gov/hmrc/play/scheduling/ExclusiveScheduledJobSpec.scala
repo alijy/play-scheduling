@@ -50,7 +50,7 @@ class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures
 
     override def name = "simpleJob"
 
-    override def initialDelay = FiniteDuration(1, TimeUnit.MINUTES)
+    override def initialDelay = FiniteDuration(1, TimeUnit.MILLISECONDS)
 
     override def interval = FiniteDuration(1, TimeUnit.MINUTES)
   }
