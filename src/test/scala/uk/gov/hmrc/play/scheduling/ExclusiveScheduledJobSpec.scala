@@ -64,29 +64,29 @@ class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures
       job.execute.futureValue.message shouldBe "2"
     }
 
-    "not allow job to run in parallel" in {
-      val job = new SimpleJob
+    // "not allow job to run in parallel" in {
+    //   val job = new SimpleJob
 
-      val pausedExecution = job.execute
-      pausedExecution.isCompleted     shouldBe false
-      job.isRunning.futureValue       shouldBe true
-      job.execute.futureValue.message shouldBe "Skipping execution: job running"
-      job.isRunning.futureValue       shouldBe true
+    //   val pausedExecution = job.execute
+    //   pausedExecution.isCompleted     shouldBe false
+    //   job.isRunning.futureValue       shouldBe true
+    //   job.execute.futureValue.message shouldBe "Skipping execution: job running"
+    //   job.isRunning.futureValue       shouldBe true
 
-      job.continueExecution()
-      pausedExecution.futureValue.message shouldBe "1"
-      job.isRunning.futureValue           shouldBe false
+    //   job.continueExecution()
+    //   pausedExecution.futureValue.message shouldBe "1"
+    //   job.isRunning.futureValue           shouldBe false
 
-    }
+    // }
 
-    "should tolerate exceptions in execution" in {
-      val job = new SimpleJob() {
-        override def executeInMutex(implicit ec: ExecutionContext): Future[Result] = throw new RuntimeException
-      }
+    // "should tolerate exceptions in execution" in {
+    //   val job = new SimpleJob() {
+    //     override def executeInMutex(implicit ec: ExecutionContext): Future[Result] = throw new RuntimeException
+    //   }
 
-      Try(job.execute.futureValue)
+    //   Try(job.execute.futureValue)
 
-      job.isRunning.futureValue shouldBe false
-    }
+    //   job.isRunning.futureValue shouldBe false
+    // }
   }
 }
