@@ -51,7 +51,7 @@ class LockedScheduledJobSpec
 
   class SimpleJob(val name: String) extends LockedScheduledJob {
 
-    override val releaseLockAfter = new Duration(5000)
+    override val releaseLockAfter = new Duration(300000)
 
     val start = new CountDownLatch(1)
     ///implicit val mongoi = mongo
@@ -98,11 +98,11 @@ class LockedScheduledJobSpec
         //job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
       //job.isRunning.futureValue       shouldBe true
 
-      //job.continueExecution()
-      //Thread.sleep(500)
-      //Await.result(pausedExecution, 1.minute).message shouldBe "Job with job2 run and completed with result 1"
+      job2.continueExecution()
+      Thread.sleep(500)
+      Await.result(pausedExecution, 5.minute).message shouldBe "Job with job2 run and completed with result 1"
       // pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
-     //Await.result(job.isRunning, 1.minute) shouldBe false
+     Await.result(job2.isRunning, 5.minute) shouldBe false
         //job.isRunning.futureValue           shouldBe false
     }
 
