@@ -45,7 +45,8 @@ class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures
     override def executeInMutex(implicit ec: ExecutionContext): Future[Result] =
       Future {
         //start.await(1, TimeUnit.MINUTES)
-        Result(executionCount.incrementAndGet().toString)
+        //Result(executionCount.incrementAndGet().toString)
+        Result("1")
       }
 
     override def name = "simpleJob"
@@ -58,7 +59,7 @@ class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures
   "ExclusiveScheduledJob" should {
     "let job run in sequence" in {
       val job = new SimpleJob
-      job.continueExecution()
+      //job.continueExecution()
       job.execute.futureValue.message shouldBe "1"
       job.execute.futureValue.message shouldBe "2"
     }
