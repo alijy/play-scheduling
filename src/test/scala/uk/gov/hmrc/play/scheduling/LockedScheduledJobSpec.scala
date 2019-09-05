@@ -19,7 +19,7 @@ package uk.gov.hmrc.play.scheduling
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.joda.time.Duration
+import org.joda.time.{DateTime, DateTimeZone, Duration}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
@@ -89,11 +89,13 @@ class LockedScheduledJobSpec
 
       val pausedExecution = job.execute
       pausedExecution.isCompleted     shouldBe false
+      Thread.sleep(2000)
       job.isRunning.futureValue       shouldBe true
       job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
       job.isRunning.futureValue       shouldBe true
 
       job.continueExecution()
+      Thread.sleep(2000)
       pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
       job.isRunning.futureValue           shouldBe false
     }
