@@ -47,7 +47,7 @@ class LockedScheduledJobSpec
       .configure("mongodb.uri" -> "mongodb://localhost:27017/test-play-schedule")
       .build()
 
-  override implicit def patienceConfig: PatienceConfig = PatienceConfig(timeout = Span(500, Millis), interval = Span(500, Millis))
+  override implicit def patienceConfig: PatienceConfig = PatienceConfig(timeout = Span(1500, Millis), interval = Span(500, Millis))
 
   class SimpleJob(val name: String) extends LockedScheduledJob {
 
@@ -89,13 +89,13 @@ class LockedScheduledJobSpec
 
       val pausedExecution = job.execute
       pausedExecution.isCompleted     shouldBe false
-      Thread.sleep(300)
+      Thread.sleep(500)
       job.isRunning.futureValue       shouldBe true
       job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
       job.isRunning.futureValue       shouldBe true
 
       job.continueExecution()
-      Thread.sleep(300)
+      Thread.sleep(500)
       pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
       job.isRunning.futureValue           shouldBe false
     }
