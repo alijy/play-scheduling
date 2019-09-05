@@ -13,6 +13,7 @@ object AppDependencies {
     Seq(
       "org.scalatest"          %% "scalatest"          % "3.0.5"          % "test",
       "org.pegdown"            % "pegdown"             % "1.6.0"          % "test",
+      "com.typesafe.play" %% "play-netty-server"       % "2.5.19" % "test",
       "ch.qos.logback"         % "logback-classic"     % "1.2.3"          % "test",
       "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.1"          % "test",
       "uk.gov.hmrc"            %% "reactivemongo-test" % "4.15.0-play-25" % "test"
