@@ -94,7 +94,7 @@ class LockedScheduledJobSpec
       //job.isRunning.futureValue       shouldBe true
 
       val job2 = new SimpleJob("job2")
-      Await.result(job2.execute, 1.minute).message shouldBe  "Job with job2 cannot aquire mongo lock, not running"
+      Await.result(job2.execute, 5.minute).message shouldBe  "Job with job2 cannot aquire mongo lock, not running"
         //job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
       //job.isRunning.futureValue       shouldBe true
 
