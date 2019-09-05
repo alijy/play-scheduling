@@ -44,7 +44,7 @@ class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures
 
     override def executeInMutex(implicit ec: ExecutionContext): Future[Result] =
       Future {
-        start.await(1, TimeUnit.MINUTES)
+        //start.await(1, TimeUnit.MINUTES)
         Result(executionCount.incrementAndGet().toString)
       }
 
