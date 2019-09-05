@@ -34,7 +34,7 @@ class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures
 
   class SimpleJob extends ExclusiveScheduledJob {
 
-    val start = new CountDownLatch(1)
+    val start = new CountDownLatch(0)
 
     def continueExecution() = start.countDown()
 
