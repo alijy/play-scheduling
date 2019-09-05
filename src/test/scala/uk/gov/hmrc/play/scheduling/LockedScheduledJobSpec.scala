@@ -69,9 +69,9 @@ class LockedScheduledJobSpec
         Result(executionCount.incrementAndGet().toString)
       }
 
-    override def initialDelay = FiniteDuration(1, TimeUnit.SECONDS)
+    override def initialDelay = FiniteDuration(1, TimeUnit.MINUTES)
 
-    override def interval = FiniteDuration(1, TimeUnit.SECONDS)
+    override def interval = FiniteDuration(1, TimeUnit.MINUTES)
 
   }
 
@@ -91,13 +91,16 @@ class LockedScheduledJobSpec
       pausedExecution.isCompleted     shouldBe false
       Thread.sleep(500)
       job.isRunning.futureValue       shouldBe true
-      job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
-      job.isRunning.futureValue       shouldBe true
+      Await.result(job.execute, 1.minute).message shouldBe  "Job with job2 cannot aquire mongo lock, not running"
+        //job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
+      //job.isRunning.futureValue       shouldBe true
+        Await.result(job.isRunning, 1.minute) shouldBe  true
 
       job.continueExecution()
       Thread.sleep(500)
       pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
-      job.isRunning.futureValue           shouldBe false
+     Await.result(job.isRunning, 1.minute) shouldBe false
+        //job.isRunning.futureValue           shouldBe false
     }
 
     "should tolerate exceptions in execution" in {
