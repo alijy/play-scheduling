@@ -34,7 +34,7 @@ class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures
 
   class SimpleJob extends ExclusiveScheduledJob {
 
-    val start = new CountDownLatch(0)
+    val start = new CountDownLatch(1)
 
     def continueExecution() = start.countDown()
 
@@ -44,14 +44,13 @@ class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures
 
     override def executeInMutex(implicit ec: ExecutionContext): Future[Result] =
       Future {
-        //start.await(1, TimeUnit.MINUTES)
-        //Result(executionCount.incrementAndGet().toString)
-        Result("1")
+        start.await(1, TimeUnit.MINUTES)
+        Result(executionCount.incrementAndGet().toString)
       }
 
     override def name = "simpleJob"
 
-    override def initialDelay = FiniteDuration(1, TimeUnit.MILLISECONDS)
+    override def initialDelay = FiniteDuration(1, TimeUnit.MINUTES)
 
     override def interval = FiniteDuration(1, TimeUnit.MINUTES)
   }
@@ -59,34 +58,34 @@ class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures
   "ExclusiveScheduledJob" should {
     "let job run in sequence" in {
       val job = new SimpleJob
-      //job.continueExecution()
+      job.continueExecution()
       job.execute.futureValue.message shouldBe "1"
       job.execute.futureValue.message shouldBe "2"
     }
 
-    // "not allow job to run in parallel" in {
-    //   val job = new SimpleJob
+    "not allow job to run in parallel" in {
+      val job = new SimpleJob
 
-    //   val pausedExecution = job.execute
-    //   pausedExecution.isCompleted     shouldBe false
-    //   job.isRunning.futureValue       shouldBe true
-    //   job.execute.futureValue.message shouldBe "Skipping execution: job running"
-    //   job.isRunning.futureValue       shouldBe true
+      val pausedExecution = job.execute
+      pausedExecution.isCompleted     shouldBe false
+      job.isRunning.futureValue       shouldBe true
+      job.execute.futureValue.message shouldBe "Skipping execution: job running"
+      job.isRunning.futureValue       shouldBe true
 
-    //   job.continueExecution()
-    //   pausedExecution.futureValue.message shouldBe "1"
-    //   job.isRunning.futureValue           shouldBe false
+      job.continueExecution()
+      pausedExecution.futureValue.message shouldBe "1"
+      job.isRunning.futureValue           shouldBe false
 
-    // }
+    }
 
-    // "should tolerate exceptions in execution" in {
-    //   val job = new SimpleJob() {
-    //     override def executeInMutex(implicit ec: ExecutionContext): Future[Result] = throw new RuntimeException
-    //   }
+    "should tolerate exceptions in execution" in {
+      val job = new SimpleJob() {
+        override def executeInMutex(implicit ec: ExecutionContext): Future[Result] = throw new RuntimeException
+      }
 
-    //   Try(job.execute.futureValue)
+      Try(job.execute.futureValue)
 
-    //   job.isRunning.futureValue shouldBe false
-    // }
+      job.isRunning.futureValue shouldBe false
+    }
   }
 }
