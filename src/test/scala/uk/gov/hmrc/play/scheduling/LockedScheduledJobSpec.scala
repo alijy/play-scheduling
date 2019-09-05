@@ -90,11 +90,11 @@ class LockedScheduledJobSpec
       val pausedExecution = job.execute
       pausedExecution.isCompleted     shouldBe false
       Thread.sleep(500)
-      job.isRunning.futureValue       shouldBe true
+        Await.result(job.isRunning, 1.minute) shouldBe  true
+      //job.isRunning.futureValue       shouldBe true
       Await.result(job.execute, 1.minute).message shouldBe  "Job with job2 cannot aquire mongo lock, not running"
         //job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
       //job.isRunning.futureValue       shouldBe true
-        Await.result(job.isRunning, 1.minute) shouldBe  true
 
       job.continueExecution()
       Thread.sleep(500)
