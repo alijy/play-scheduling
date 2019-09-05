@@ -26,7 +26,7 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.lock.LockMongoRepository
+import uk.gov.hmrc.lock.{LockMongoRepository, LockRepository}
 import uk.gov.hmrc.mongo.MongoSpecSupport
 
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -54,8 +54,8 @@ class LockedScheduledJobSpec
     override val releaseLockAfter = new Duration(5000)
 
     val start = new CountDownLatch(1)
-
-    val lockRepository = LockMongoRepository(mongo)
+    ///implicit val mongoi = mongo
+    val lockRepository = new LockRepository()
 
     def continueExecution(): Unit = start.countDown()
 
@@ -75,7 +75,7 @@ class LockedScheduledJobSpec
 
   }
 
-  "ExclusiveScheduledJob" should {
+  "LockedScheduledJob" should {
 
     "let job run in sequence" in {
       val job = new SimpleJob("job1")
