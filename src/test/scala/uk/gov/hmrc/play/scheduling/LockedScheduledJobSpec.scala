@@ -98,7 +98,8 @@ class LockedScheduledJobSpec
 
       job.continueExecution()
       Thread.sleep(500)
-      pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
+      Await.result(pausedExecution, 1.minute).message shouldBe "Job with job2 run and completed with result 1"
+      // pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
      Await.result(job.isRunning, 1.minute) shouldBe false
         //job.isRunning.futureValue           shouldBe false
     }
@@ -108,9 +109,13 @@ class LockedScheduledJobSpec
         override def executeInLock(implicit ec: ExecutionContext): Future[Result] = throw new RuntimeException
       }
 
-      Try(job.execute.futureValue)
+      Try(
+     Await.result(job.execute, 1.minute)
+        //job.execute.futureValue
+      )
 
-      job.isRunning.futureValue shouldBe false
+     Await.result(job.isRunning, 1.minute) shouldBe false
+      // job.isRunning.futureValue shouldBe false
     }
   }
 
