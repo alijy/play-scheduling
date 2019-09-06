@@ -61,11 +61,11 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
     await(repo.insert(lock))
   }
 
-    class SimpleJob(val name: String, repo: LockRepository) extends LockedScheduledJob {
+    class SimpleJob(val name: String, repo: LockRepository, latch: CountDownLatch) extends LockedScheduledJob {
 
         override val releaseLockAfter = new Duration(300000)
 
-        val start = new CountDownLatch(1)
+        val start = latch
         ///implicit val mongoi = mongo
         //val lockRepository = new LockRepository()
         // val lockRepository = new LockRepository()
@@ -82,8 +82,8 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
         def executions: Int = executionCount.get()
         override def executeInLock(implicit ec: ExecutionContext): Future[Result] =
             Future {
-              Thread.sleep(300)
-                //start.await(1, TimeUnit.MINUTES)
+              //Thread.sleep(300)
+                start.await(1, TimeUnit.MINUTES)
                 Result(executionCount.incrementAndGet().toString)
             }
 
@@ -103,7 +103,9 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
         //     await(job.execute).message shouldBe "Job with job1 run and completed with result 2"
         // }
       "not allow job to run in parallel" in {
-        val job = new SimpleJob("job2", repo)
+
+        val latch = new CountDownLatch(1)
+        val job = new SimpleJob("job2", repo, latch)
 
         val pausedExecution = job.execute
 
@@ -113,7 +115,8 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
         // await(job.execute).message shouldBe "Job with job2 cannot aquire mongo lock, not running"
         // await(job.isRunning)       shouldBe true
 
-        job.continueExecution()
+        latch.countDown()
+        //job.continueExecution()
 
         await(pausedExecution).message shouldBe "Job with job2 run and completed with result 1"
 
