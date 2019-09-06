@@ -82,6 +82,7 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
         def executions: Int = executionCount.get()
         override def executeInLock(implicit ec: ExecutionContext): Future[Result] =
             Future {
+              Thread.sleep(300)
                 //start.await(1, TimeUnit.MINUTES)
                 Result(executionCount.incrementAndGet().toString)
             }
@@ -107,6 +108,7 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
         val pausedExecution = job.execute
 
         pausedExecution.isCompleted     shouldBe false
+        Thread.sleep(200)
         await(job.isRunning)   shouldBe true
         // await(job.execute).message shouldBe "Job with job2 cannot aquire mongo lock, not running"
         // await(job.isRunning)       shouldBe true
