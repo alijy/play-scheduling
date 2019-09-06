@@ -61,7 +61,7 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
     await(repo.insert(lock))
   }
 
-    class SimpleJob(val name: String) extends LockedScheduledJob {
+    class SimpleJob(val name: String, repo: LockRepository) extends LockedScheduledJob {
 
         override val releaseLockAfter = new Duration(300000)
 
@@ -70,11 +70,12 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
         //val lockRepository = new LockRepository()
         // val lockRepository = new LockRepository()
 
-      val lockRepository = new LockRepository {
-        val retryIntervalMillis = FiniteDuration(5L, TimeUnit.SECONDS).toMillis
+      val lockRepository = repo
+  //        new LockRepository {
+  //      val retryIntervalMillis = FiniteDuration(5L, TimeUnit.SECONDS).toMillis
 
-        override def withCurrentTime[A](f: (DateTime) => A) = f(now)
-      }
+  //      override def withCurrentTime[A](f: (DateTime) => A) = f(now)
+  //    }
 
         def continueExecution(): Unit = start.countDown()
         val executionCount = new AtomicInteger(0)
@@ -94,7 +95,7 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
     "LockedScheduledJob" should {
 
         "let job run in sequence" in {
-            val job = new SimpleJob("job1")
+            val job = new SimpleJob("job1", repo)
             job.continueExecution()
             //await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe true
             await(job.execute).message shouldBe "Job with job1 run and completed with result 1"
@@ -102,7 +103,7 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
         }
     }
     "not allow job to run in parallel" in {
-        val job = new SimpleJob("job2")
+        val job = new SimpleJob("job2", repo)
 
         val pausedExecution = job.execute
         pausedExecution.isCompleted     shouldBe false
