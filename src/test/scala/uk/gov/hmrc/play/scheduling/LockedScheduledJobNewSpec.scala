@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.lock
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
 
 import org.joda.time.{DateTime, Duration}
 import org.scalatest._
@@ -99,7 +99,7 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
         //Future.successful(r)
         r
 
-      }
+      }(ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10)))
 
     }
 
