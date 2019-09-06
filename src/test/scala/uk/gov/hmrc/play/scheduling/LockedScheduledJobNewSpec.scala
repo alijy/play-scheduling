@@ -106,7 +106,7 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
 
         val pausedExecution = job.execute
 
-        pausedExecution.isCompleted     shouldBe false
+        //pausedExecution.isCompleted     shouldBe false
         await(job.isRunning)   shouldBe true
         // await(job.execute).message shouldBe "Job with job2 cannot aquire mongo lock, not running"
         // await(job.isRunning)       shouldBe true
