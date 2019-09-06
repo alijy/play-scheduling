@@ -111,9 +111,9 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
         // await(job.execute).message shouldBe "Job with job2 cannot aquire mongo lock, not running"
         // await(job.isRunning)       shouldBe true
 
-        // job.continueExecution()
+        job.continueExecution()
 
-        // await(pausedExecution).message shouldBe "Job with job2 run and completed with result 1"
+        await(pausedExecution).message shouldBe "Job with job2 run and completed with result 1"
 
         // await(job.isRunning)           shouldBe false
 
@@ -133,251 +133,251 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
 
 
 
-    "The lock method" should {
+  //   "The lock method" should {
 
-    "successfully create a lock if one does not already exist" in {
-      await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe true
+  //   "successfully create a lock if one does not already exist" in {
+  //     await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe true
 
-      val lock = await(repo.findAll())
+  //     val lock = await(repo.findAll())
 
-      lock.head shouldBe Lock(lockId, owner, now, now.plusSeconds(1))
-    }
+  //     lock.head shouldBe Lock(lockId, owner, now, now.plusSeconds(1))
+  //   }
 
-    "successfully create a lock if a different one already exists" in {
-      manuallyInsertLock(Lock("nonMatchingLock", owner, now, now.plusSeconds(1)))
+  //   "successfully create a lock if a different one already exists" in {
+  //     manuallyInsertLock(Lock("nonMatchingLock", owner, now, now.plusSeconds(1)))
 
-      await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe true
-      await(repo.count) shouldBe 2
+  //     await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe true
+  //     await(repo.count) shouldBe 2
 
-      await(repo.findById(lockId)) shouldBe Some(Lock(lockId, owner, now, now.plusSeconds(1)))
-    }
+  //     await(repo.findById(lockId)) shouldBe Some(Lock(lockId, owner, now, now.plusSeconds(1)))
+  //   }
 
-    "do not change a non-expired lock with a different owner" in {
-      val alternativeOwner = "owner2"
-      manuallyInsertLock(Lock(lockId, alternativeOwner, now, now.plusSeconds(100)))
+  //   "do not change a non-expired lock with a different owner" in {
+  //     val alternativeOwner = "owner2"
+  //     manuallyInsertLock(Lock(lockId, alternativeOwner, now, now.plusSeconds(100)))
 
-      await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe false
-      await(repo.findById(lockId)).map(_.owner) shouldBe Some(alternativeOwner)
-    }
+  //     await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe false
+  //     await(repo.findById(lockId)).map(_.owner) shouldBe Some(alternativeOwner)
+  //   }
 
-    "do not change a non-expired lock with the same owner" in {
+  //   "do not change a non-expired lock with the same owner" in {
 
-      await(repo.removeAll())
+  //     await(repo.removeAll())
 
-      val existingLock = Lock(lockId, owner, now.minusDays(1), now.plusDays(1))
+  //     val existingLock = Lock(lockId, owner, now.minusDays(1), now.plusDays(1))
 
-      manuallyInsertLock(existingLock)
+  //     manuallyInsertLock(existingLock)
 
-      await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe false
+  //     await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe false
 
-      await(repo.findAll()).head shouldBe existingLock
+  //     await(repo.findAll()).head shouldBe existingLock
 
-    }
+  //   }
 
-    "change an expired lock" in {
-      val expiredLock = Lock(lockId, owner, now.minusDays(2), now.minusDays(1))
+  //   "change an expired lock" in {
+  //     val expiredLock = Lock(lockId, owner, now.minusDays(2), now.minusDays(1))
 
-      manuallyInsertLock(expiredLock)
+  //     manuallyInsertLock(expiredLock)
 
-      val gotLock = await(repo.lock(lockId, owner, new Duration(1000L)))
+  //     val gotLock = await(repo.lock(lockId, owner, new Duration(1000L)))
 
-      gotLock shouldBe true
-      await(repo.findAll()).head shouldBe Lock(lockId, owner, now, now.plusSeconds(1))
-    }
-  }
+  //     gotLock shouldBe true
+  //     await(repo.findAll()).head shouldBe Lock(lockId, owner, now, now.plusSeconds(1))
+  //   }
+  // }
 
-  "The renew method" should {
-    "not renew a lock if one does not already exist" in {
-      await(repo.renew(lockId, owner, new Duration(1000L))) shouldBe false
-      await(repo.findAll()) shouldBe empty
-    }
+  // "The renew method" should {
+  //   "not renew a lock if one does not already exist" in {
+  //     await(repo.renew(lockId, owner, new Duration(1000L))) shouldBe false
+  //     await(repo.findAll()) shouldBe empty
+  //   }
 
-    "not renew a different lock if one exists" in {
-      manuallyInsertLock(Lock("nonMatchingLock", owner, now, now.plusSeconds(1)))
+  //   "not renew a different lock if one exists" in {
+  //     manuallyInsertLock(Lock("nonMatchingLock", owner, now, now.plusSeconds(1)))
 
-      await(repo.renew(lockId, owner, new Duration(1000L))) shouldBe false
-      await(repo.findAll()).head shouldBe Lock("nonMatchingLock", owner, now, now.plusSeconds(1))
-    }
+  //     await(repo.renew(lockId, owner, new Duration(1000L))) shouldBe false
+  //     await(repo.findAll()).head shouldBe Lock("nonMatchingLock", owner, now, now.plusSeconds(1))
+  //   }
 
-    "not change a non-expired lock with a different owner" in {
-      val alternativeOwner = "owner2"
-      manuallyInsertLock(Lock(lockId, alternativeOwner, now, now.plusSeconds(100)))
+  //   "not change a non-expired lock with a different owner" in {
+  //     val alternativeOwner = "owner2"
+  //     manuallyInsertLock(Lock(lockId, alternativeOwner, now, now.plusSeconds(100)))
 
-      await(repo.renew(lockId, owner, new Duration(1000L))) shouldBe false
-      await(repo.findById(lockId)).map(_.owner) shouldBe Some(alternativeOwner)
-    }
+  //     await(repo.renew(lockId, owner, new Duration(1000L))) shouldBe false
+  //     await(repo.findById(lockId)).map(_.owner) shouldBe Some(alternativeOwner)
+  //   }
 
-    "change a non-expired lock with the same owner" in {
-      val existingLock = Lock(lockId, owner, now.minusDays(1), now.plusDays(1))
+  //   "change a non-expired lock with the same owner" in {
+  //     val existingLock = Lock(lockId, owner, now.minusDays(1), now.plusDays(1))
 
-      manuallyInsertLock(existingLock)
+  //     manuallyInsertLock(existingLock)
 
-      await(repo.renew(lockId, owner, new Duration(1000L))) shouldBe true
+  //     await(repo.renew(lockId, owner, new Duration(1000L))) shouldBe true
 
-      await(repo.findAll()).head shouldBe Lock(lockId, owner, existingLock.timeCreated, now.plus(new Duration(1000L)))
-    }
+  //     await(repo.findAll()).head shouldBe Lock(lockId, owner, existingLock.timeCreated, now.plus(new Duration(1000L)))
+  //   }
 
-    "not renew an expired lock" in {
-      val expiredLock = Lock(lockId, owner, now.minusDays(2), now.minusDays(1))
+  //   "not renew an expired lock" in {
+  //     val expiredLock = Lock(lockId, owner, now.minusDays(2), now.minusDays(1))
 
-      manuallyInsertLock(expiredLock)
+  //     manuallyInsertLock(expiredLock)
 
-      val gotLock = await(repo.renew(lockId, owner, new Duration(1000L)))
+  //     val gotLock = await(repo.renew(lockId, owner, new Duration(1000L)))
 
-      gotLock shouldBe false
-      await(repo.findAll()).head shouldBe expiredLock
-    }
-  }
+  //     gotLock shouldBe false
+  //     await(repo.findAll()).head shouldBe expiredLock
+  //   }
+  // }
 
-  "The releaseLock method" should {
+  // "The releaseLock method" should {
 
-    "remove an owned and expired lock" in {
-      val lock = Lock(lockId, owner, now.minusDays(2), now.minusDays(1))
-      manuallyInsertLock(lock)
+  //   "remove an owned and expired lock" in {
+  //     val lock = Lock(lockId, owner, now.minusDays(2), now.minusDays(1))
+  //     manuallyInsertLock(lock)
 
-      await(repo.releaseLock(lockId, owner))
+  //     await(repo.releaseLock(lockId, owner))
 
-      await(repo.count) shouldBe 0
-    }
+  //     await(repo.count) shouldBe 0
+  //   }
 
-    "remove an owned and unexpired lock" in {
-      val lock = Lock(lockId, owner, now.minusDays(1), now.plusDays(1))
-      manuallyInsertLock(lock)
+  //   "remove an owned and unexpired lock" in {
+  //     val lock = Lock(lockId, owner, now.minusDays(1), now.plusDays(1))
+  //     manuallyInsertLock(lock)
 
-      await(repo.releaseLock(lockId, owner))
+  //     await(repo.releaseLock(lockId, owner))
 
-      await(repo.count) shouldBe 0
-    }
+  //     await(repo.count) shouldBe 0
+  //   }
 
-    "do nothing if the lock doesn't exist" in {
-      await(repo.releaseLock(lockId, owner))
+  //   "do nothing if the lock doesn't exist" in {
+  //     await(repo.releaseLock(lockId, owner))
 
-      await(repo.count) shouldBe 0
-    }
+  //     await(repo.count) shouldBe 0
+  //   }
 
-    "leave an expired lock owned by someone else" in {
+  //   "leave an expired lock owned by someone else" in {
 
-      val someoneElsesExpiredLock = Lock(lockId, "someoneElse", now.minusDays(2), now.minusDays(1))
-      manuallyInsertLock(someoneElsesExpiredLock)
+  //     val someoneElsesExpiredLock = Lock(lockId, "someoneElse", now.minusDays(2), now.minusDays(1))
+  //     manuallyInsertLock(someoneElsesExpiredLock)
 
-      await(repo.releaseLock(lockId, owner))
+  //     await(repo.releaseLock(lockId, owner))
 
-      await(repo.findAll()).head shouldBe someoneElsesExpiredLock
-    }
+  //     await(repo.findAll()).head shouldBe someoneElsesExpiredLock
+  //   }
 
-    "leave an unexpired lock owned by someone else" in {
+  //   "leave an unexpired lock owned by someone else" in {
 
-      val someoneElsesLock = Lock(lockId, "someoneElse", now.minusDays(2), now.plusDays(1))
-      manuallyInsertLock(someoneElsesLock)
+  //     val someoneElsesLock = Lock(lockId, "someoneElse", now.minusDays(2), now.plusDays(1))
+  //     manuallyInsertLock(someoneElsesLock)
 
-      await(repo.releaseLock(lockId, owner))
+  //     await(repo.releaseLock(lockId, owner))
 
-      await(repo.findAll()).head shouldBe someoneElsesLock
-    }
+  //     await(repo.findAll()).head shouldBe someoneElsesLock
+  //   }
 
-    "leave a different owned lock" in {
+  //   "leave a different owned lock" in {
 
-      val someOtherLock = Lock("someOtherLock", owner, now.minusDays(1), now.plusDays(1))
-      manuallyInsertLock(someOtherLock)
+  //     val someOtherLock = Lock("someOtherLock", owner, now.minusDays(1), now.plusDays(1))
+  //     manuallyInsertLock(someOtherLock)
 
-      await(repo.releaseLock(lockId, owner))
+  //     await(repo.releaseLock(lockId, owner))
 
-      await(repo.findAll()).head shouldBe someOtherLock
-    }
-  }
+  //     await(repo.findAll()).head shouldBe someOtherLock
+  //   }
+  // }
 
-  "The isLocked method" should {
-    "return false if no lock obtained" in {
-      await(repo.isLocked(lockId, owner)) should be (false)
-    }
+  // "The isLocked method" should {
+  //   "return false if no lock obtained" in {
+  //     await(repo.isLocked(lockId, owner)) should be (false)
+  //   }
 
-    "return true if lock held" in {
-      manuallyInsertLock(Lock(lockId, owner, now, now.plusSeconds(100)))
-      await(repo.isLocked(lockId, owner)) should be (true)
-    }
+  //   "return true if lock held" in {
+  //     manuallyInsertLock(Lock(lockId, owner, now, now.plusSeconds(100)))
+  //     await(repo.isLocked(lockId, owner)) should be (true)
+  //   }
 
-    "return false if the lock is held but expired" in {
-      manuallyInsertLock(Lock(lockId, owner, now.minusDays(2), now.minusDays(1)))
-      await(repo.isLocked(lockId, owner)) should be (false)
-    }
-  }
+  //   "return false if the lock is held but expired" in {
+  //     manuallyInsertLock(Lock(lockId, owner, now.minusDays(2), now.minusDays(1)))
+  //     await(repo.isLocked(lockId, owner)) should be (false)
+  //   }
+  // }
 
-  "The lock keeper" should {
-    val lockKeeper = new LockKeeper {
-      val forceLockReleaseAfter = Duration.standardSeconds(1)
-      override lazy val serverId: String = testContext.owner
-      val lockId: String = testContext.lockId
-      val repo: LockRepository = testContext.repo
-    }
+  // "The lock keeper" should {
+  //   val lockKeeper = new LockKeeper {
+  //     val forceLockReleaseAfter = Duration.standardSeconds(1)
+  //     override lazy val serverId: String = testContext.owner
+  //     val lockId: String = testContext.lockId
+  //     val repo: LockRepository = testContext.repo
+  //   }
 
-    "run the block supplied if the lock can be obtained, and return an option on the result and release the lock" in {
-      def hasLock = {
-        await(repo.findById(lockId)) shouldBe Some(Lock(lockId, owner, now, now.plusSeconds(1)))
-        Future.successful("testString")
-      }
+  //   "run the block supplied if the lock can be obtained, and return an option on the result and release the lock" in {
+  //     def hasLock = {
+  //       await(repo.findById(lockId)) shouldBe Some(Lock(lockId, owner, now, now.plusSeconds(1)))
+  //       Future.successful("testString")
+  //     }
 
-      await(lockKeeper.tryLock[String](hasLock)) shouldBe Some("testString")
-      repo shouldBe empty
-    }
+  //     await(lockKeeper.tryLock[String](hasLock)) shouldBe Some("testString")
+  //     repo shouldBe empty
+  //   }
 
-    "run the block supplied and release the lock even if the block returns a failed future" in {
-      a [RuntimeException] should be thrownBy{
-        await(lockKeeper.tryLock(Future.failed(new RuntimeException)))
-      }
-      repo shouldBe empty
-    }
+  //   "run the block supplied and release the lock even if the block returns a failed future" in {
+  //     a [RuntimeException] should be thrownBy{
+  //       await(lockKeeper.tryLock(Future.failed(new RuntimeException)))
+  //     }
+  //     repo shouldBe empty
+  //   }
 
-    "run the block supplied and release the lock even if the block throws an exception" in {
-      a [RuntimeException] should be thrownBy{
-        await(lockKeeper.tryLock(throw new RuntimeException ))
-      }
-      repo shouldBe empty
-    }
+  //   "run the block supplied and release the lock even if the block throws an exception" in {
+  //     a [RuntimeException] should be thrownBy{
+  //       await(lockKeeper.tryLock(throw new RuntimeException ))
+  //     }
+  //     repo shouldBe empty
+  //   }
 
-    "not run the block supplied if the lock is owned by someone else, and return None" in {
-      val manualyInsertedLock = Lock(lockId, "owner2", now, now.plusSeconds(100))
-      manuallyInsertLock(manualyInsertedLock)
+  //   "not run the block supplied if the lock is owned by someone else, and return None" in {
+  //     val manualyInsertedLock = Lock(lockId, "owner2", now, now.plusSeconds(100))
+  //     manuallyInsertLock(manualyInsertedLock)
 
-      await(lockKeeper.tryLock {
-        fail("Should not be run!")
-      }) shouldBe None
+  //     await(lockKeeper.tryLock {
+  //       fail("Should not be run!")
+  //     }) shouldBe None
 
-      await(repo.findAll()).head shouldBe manualyInsertedLock
-    }
+  //     await(repo.findAll()).head shouldBe manualyInsertedLock
+  //   }
 
-    "not run the block supplied if the lock is already owned by the caller, and return None" in {
-      val manualyInsertedLock = Lock(lockId, owner, now, now.plusSeconds(100))
-      manuallyInsertLock(manualyInsertedLock)
+  //   "not run the block supplied if the lock is already owned by the caller, and return None" in {
+  //     val manualyInsertedLock = Lock(lockId, owner, now, now.plusSeconds(100))
+  //     manuallyInsertLock(manualyInsertedLock)
 
-      await(lockKeeper.tryLock {
-        fail("Should not be run!")
-      }) shouldBe None
+  //     await(lockKeeper.tryLock {
+  //       fail("Should not be run!")
+  //     }) shouldBe None
 
-      await(repo.findAll()).head shouldBe manualyInsertedLock
-    }
+  //     await(repo.findAll()).head shouldBe manualyInsertedLock
+  //   }
 
-    "return false from isLocked if no lock obtained" in {
-      await(lockKeeper.isLocked) shouldBe false
-    }
+  //   "return false from isLocked if no lock obtained" in {
+  //     await(lockKeeper.isLocked) shouldBe false
+  //   }
 
-    "return true from isLocked if lock held" in {
-      manuallyInsertLock(Lock(lockId, owner, now, now.plusSeconds(100)))
-      await(lockKeeper.isLocked) shouldBe true
-    }
-  }
+  //   "return true from isLocked if lock held" in {
+  //     manuallyInsertLock(Lock(lockId, owner, now, now.plusSeconds(100)))
+  //     await(lockKeeper.isLocked) shouldBe true
+  //   }
+  // }
 
 
-  "Mongo should" should {
-    val DuplicateKey = 11000
-    "throw an exception if a lock object is inserted that is not unique" in {
-      val lock1 = Lock("lockName", "owner1", now.plusDays(1), now.plusDays(2))
-      val lock2 = Lock("lockName", "owner2", now.plusDays(3), now.plusDays(4))
-      manuallyInsertLock(lock1)
+  // "Mongo should" should {
+  //   val DuplicateKey = 11000
+  //   "throw an exception if a lock object is inserted that is not unique" in {
+  //     val lock1 = Lock("lockName", "owner1", now.plusDays(1), now.plusDays(2))
+  //     val lock2 = Lock("lockName", "owner2", now.plusDays(3), now.plusDays(4))
+  //     manuallyInsertLock(lock1)
 
-      val error = the[LastError] thrownBy manuallyInsertLock(lock2)
-      error.code should contain(DuplicateKey)
+  //     val error = the[LastError] thrownBy manuallyInsertLock(lock2)
+  //     error.code should contain(DuplicateKey)
 
-      await(repo.findAll()).head shouldBe lock1
-    }
-  }
+  //     await(repo.findAll()).head shouldBe lock1
+  //   }
+  // }
 }
