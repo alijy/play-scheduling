@@ -62,111 +62,114 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
     await(repo.insert(lock))
   }
 
-    class SimpleJob(val name: String, repo: LockRepository, latch: CountDownLatch) extends LockedScheduledJob {  self =>
+  class SimpleJob(val name: String, repo: LockRepository, latch: CountDownLatch) extends LockedScheduledJob {  self =>
 
-        override val releaseLockAfter = new Duration(300000)
+    override val releaseLockAfter = new Duration(300000)
 
-        val start = latch
-        ///implicit val mongoi = mongo
-        //val lockRepository = new LockRepository()
-        // val lockRepository = new LockRepository()
+    val start = latch
+    ///implicit val mongoi = mongo
+    //val lockRepository = new LockRepository()
+    // val lockRepository = new LockRepository()
 
-      val lockRepository = repo
-  //        new LockRepository {
-  //      val retryIntervalMillis = FiniteDuration(5L, TimeUnit.SECONDS).toMillis
+    val lockRepository = repo
+    //        new LockRepository {
+    //      val retryIntervalMillis = FiniteDuration(5L, TimeUnit.SECONDS).toMillis
 
-  //      override def withCurrentTime[A](f: (DateTime) => A) = f(now)
-  //    }
+    //      override def withCurrentTime[A](f: (DateTime) => A) = f(now)
+    //    }
 
-        def continueExecution(): Unit = start.countDown()
-        val executionCount = new AtomicInteger(0)
-        def executions: Int = executionCount.get()
-        override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
+    def continueExecution(): Unit = start.countDown()
+    val executionCount = new AtomicInteger(0)
+    def executions: Int = executionCount.get()
+    override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
 
-            //Future {
-        //     val thread = new Thread {
-        //         override def run(): Unit = {
-        //             Logger.debug("****: Before await")
-        //             //latch.await()
-        //             self.start.await()
-        //             Logger.debug("****: After await")
-        //             Logger.debug("****: After result")
-        //         }
+     //   val f = Future {
+            Logger.debug("****: Before await")
+            start.await()
+            Logger.debug("****: After await")
+      //  }
+       // await(f)
+      //sdf
 
-        //     }
-        //   thread.start
-        //     val r = Result(executionCount.incrementAndGet().toString)
-        //     Future.successful(r)
-        // }
-        //Thread.sleep(300)
-              //Logger.debug("****: Before await")
-               // start.await()
-                //Logger.debug("****: After await")
-                //val r=Result(executionCount.incrementAndGet().toString)
-                //Logger.debug("****: After result")
-              ///r
-            //}
-
-          val f = Future {
-              Logger.debug("****: Before await")
-               start.await()
-                Logger.debug("****: After await")
-          }
-          await(f)
-
-                val r=Result(executionCount.incrementAndGet().toString)
-                Logger.debug("****: After result")
-          r
-        }
-
-        override def initialDelay = FiniteDuration(1, TimeUnit.MINUTES)
-
-        override def interval = FiniteDuration(1, TimeUnit.MINUTES)
-
+        val r = Result(executionCount.incrementAndGet().toString)
+        Logger.debug("****: After result")
+        Future.successful(r)
+      r
     }
 
-    "LockedScheduledJob" should {
+        //Future {
+      //     val thread = new Thread {
+      //         override def run(): Unit = {
+      //             Logger.debug("****: Before await")
+      //             //latch.await()
+      //             self.start.await()
+      //             Logger.debug("****: After await")
+      //             Logger.debug("****: After result")
+      //         }
 
-        // "let job run in sequence" in {
-        //     val job = new SimpleJob("job1", repo)
-        //     job.continueExecution()
-        //     //await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe true
-        //     await(job.execute).message shouldBe "Job with job1 run and completed with result 1"
-        //     await(job.execute).message shouldBe "Job with job1 run and completed with result 2"
-        // }
-      "not allow job to run in parallel" in {
-
-        val latch = new CountDownLatch(1)
-        val job = new SimpleJob("job2", repo, latch)
-
-        val pausedExecution = job.execute
-
-        pausedExecution.isCompleted     shouldBe false
-        Thread.sleep(200)
-        await(job.isRunning)   shouldBe true
-        // await(job.execute).message shouldBe "Job with job2 cannot aquire mongo lock, not running"
-        // await(job.isRunning)       shouldBe true
-
-        latch.countDown()
-        //job.continueExecution()
-
-        await(pausedExecution).message shouldBe "Job with job2 run and completed with result 1"
-
-        // await(job.isRunning)           shouldBe false
+      //     }
+      //   thread.start
+      //     val r = Result(executionCount.incrementAndGet().toString)
+      //     Future.successful(r)
+      // }
+      //Thread.sleep(300)
+      //Logger.debug("****: Before await")
+      // start.await()
+      //Logger.debug("****: After await")
+      //val r=Result(executionCount.incrementAndGet().toString)
+      //Logger.debug("****: After result")
+      ///r
+      //}
 
 
+    override def initialDelay = FiniteDuration(1, TimeUnit.MINUTES)
+
+    override def interval = FiniteDuration(1, TimeUnit.MINUTES)
+
+  }
+
+  "LockedScheduledJob" should {
+
+    // "let job run in sequence" in {
+    //     val job = new SimpleJob("job1", repo)
+    //     job.continueExecution()
+    //     //await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe true
+    //     await(job.execute).message shouldBe "Job with job1 run and completed with result 1"
+    //     await(job.execute).message shouldBe "Job with job1 run and completed with result 2"
+    // }
+    "not allow job to run in parallel" in {
+
+      val latch = new CountDownLatch(1)
+      val job = new SimpleJob("job2", repo, latch)
+
+      val pausedExecution = job.execute
+
+      pausedExecution.isCompleted     shouldBe false
+      Thread.sleep(200)
+      await(job.isRunning)   shouldBe true
+      // await(job.execute).message shouldBe "Job with job2 cannot aquire mongo lock, not running"
+      // await(job.isRunning)       shouldBe true
+
+      latch.countDown()
+      //job.continueExecution()
+
+      await(pausedExecution).message shouldBe "Job with job2 run and completed with result 1"
+
+      // await(job.isRunning)           shouldBe false
 
 
-        // pausedExecution.isCompleted     shouldBe false
-        // job.isRunning.futureValue       shouldBe true
-        // job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
-        // job.isRunning.futureValue       shouldBe true
 
-        // job.continueExecution()
-        // pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
-        // job.isRunning.futureValue           shouldBe false
-      }
+
+      // pausedExecution.isCompleted     shouldBe false
+      // job.isRunning.futureValue       shouldBe true
+      // job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
+      // job.isRunning.futureValue       shouldBe true
+
+      // job.continueExecution()
+      // pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
+      // job.isRunning.futureValue           shouldBe false
     }
+  }
 
 
 
