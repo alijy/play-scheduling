@@ -22,6 +22,7 @@ import org.joda.time.{DateTime, Duration}
 import org.scalatest._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.enablers.Emptiness
+import play.api.Logger
 import reactivemongo.api.commands.LastError
 import uk.gov.hmrc.lock.LockFormats.Lock
 import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport, ReactiveRepository}
@@ -83,8 +84,12 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
         override def executeInLock(implicit ec: ExecutionContext): Future[Result] =
             Future {
               //Thread.sleep(300)
+              Logger.debug("****: Before await")
                 start.await()
-                Result(executionCount.incrementAndGet().toString)
+                Logger.debug("****: After await")
+                val r=Result(executionCount.incrementAndGet().toString)
+                Logger.debug("****: After result")
+              r
             }
 
         override def initialDelay = FiniteDuration(1, TimeUnit.MINUTES)
