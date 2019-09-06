@@ -83,7 +83,7 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
         override def executeInLock(implicit ec: ExecutionContext): Future[Result] =
             Future {
               //Thread.sleep(300)
-                start.await(1, TimeUnit.MINUTES)
+                start.await()
                 Result(executionCount.incrementAndGet().toString)
             }
 
