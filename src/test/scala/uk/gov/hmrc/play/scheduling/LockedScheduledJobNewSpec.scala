@@ -101,20 +101,32 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
             await(job.execute).message shouldBe "Job with job1 run and completed with result 1"
             await(job.execute).message shouldBe "Job with job1 run and completed with result 2"
         }
+      "not allow job to run in parallel" in {
+        val job = new SimpleJob("job2", repo)
+
+        val pausedExecution = job.execute
+
+        pausedExecution.isCompleted     shouldBe false
+        await(job.isRunning)   shouldBe true
+        await(job.execute).message shouldBe "Job with job2 cannot aquire mongo lock, not running"
+        await(job.isRunning)       shouldBe true
+
+        job.continueExecution()
+
+        await(pausedExecution).message shouldBe "Job with job2 run and completed with result 1"
+
+        await(job.isRunning)           shouldBe false
+
+        // pausedExecution.isCompleted     shouldBe false
+        // job.isRunning.futureValue       shouldBe true
+        // job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
+        // job.isRunning.futureValue       shouldBe true
+
+        // job.continueExecution()
+        // pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
+        // job.isRunning.futureValue           shouldBe false
+      }
     }
-    // "not allow job to run in parallel" in {
-    //     val job = new SimpleJob("job2", repo)
-
-    //     val pausedExecution = job.execute
-    //     pausedExecution.isCompleted     shouldBe false
-    //     job.isRunning.futureValue       shouldBe true
-    //     job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
-    //     job.isRunning.futureValue       shouldBe true
-
-    //     job.continueExecution()
-    //     pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
-    //     job.isRunning.futureValue           shouldBe false
-    // }
 
 
 
