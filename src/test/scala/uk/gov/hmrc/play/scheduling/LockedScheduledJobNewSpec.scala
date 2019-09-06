@@ -94,13 +94,13 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
 
     "LockedScheduledJob" should {
 
-        "let job run in sequence" in {
-            val job = new SimpleJob("job1", repo)
-            job.continueExecution()
-            //await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe true
-            await(job.execute).message shouldBe "Job with job1 run and completed with result 1"
-            await(job.execute).message shouldBe "Job with job1 run and completed with result 2"
-        }
+        // "let job run in sequence" in {
+        //     val job = new SimpleJob("job1", repo)
+        //     job.continueExecution()
+        //     //await(repo.lock(lockId, owner, new Duration(1000L))) shouldBe true
+        //     await(job.execute).message shouldBe "Job with job1 run and completed with result 1"
+        //     await(job.execute).message shouldBe "Job with job1 run and completed with result 2"
+        // }
       "not allow job to run in parallel" in {
         val job = new SimpleJob("job2", repo)
 
