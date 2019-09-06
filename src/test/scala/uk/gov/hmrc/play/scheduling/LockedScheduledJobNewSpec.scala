@@ -62,7 +62,7 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
     await(repo.insert(lock))
   }
 
-    class SimpleJob(val name: String, repo: LockRepository, latch: CountDownLatch) extends LockedScheduledJob {
+    class SimpleJob(val name: String, repo: LockRepository, latch: CountDownLatch) extends LockedScheduledJob {  self =>
 
         override val releaseLockAfter = new Duration(300000)
 
@@ -81,16 +81,43 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
         def continueExecution(): Unit = start.countDown()
         val executionCount = new AtomicInteger(0)
         def executions: Int = executionCount.get()
-        override def executeInLock(implicit ec: ExecutionContext): Future[Result] =
-            Future {
-              //Thread.sleep(300)
+        override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
+
+            //Future {
+        //     val thread = new Thread {
+        //         override def run(): Unit = {
+        //             Logger.debug("****: Before await")
+        //             //latch.await()
+        //             self.start.await()
+        //             Logger.debug("****: After await")
+        //             Logger.debug("****: After result")
+        //         }
+
+        //     }
+        //   thread.start
+        //     val r = Result(executionCount.incrementAndGet().toString)
+        //     Future.successful(r)
+        // }
+        //Thread.sleep(300)
+              //Logger.debug("****: Before await")
+               // start.await()
+                //Logger.debug("****: After await")
+                //val r=Result(executionCount.incrementAndGet().toString)
+                //Logger.debug("****: After result")
+              ///r
+            //}
+
+          val f = Future {
               Logger.debug("****: Before await")
-                start.await()
+               start.await()
                 Logger.debug("****: After await")
+          }
+          await(f)
+
                 val r=Result(executionCount.incrementAndGet().toString)
                 Logger.debug("****: After result")
-              r
-            }
+          r
+        }
 
         override def initialDelay = FiniteDuration(1, TimeUnit.MINUTES)
 
