@@ -108,14 +108,17 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
 
         pausedExecution.isCompleted     shouldBe false
         await(job.isRunning)   shouldBe true
-        await(job.execute).message shouldBe "Job with job2 cannot aquire mongo lock, not running"
-        await(job.isRunning)       shouldBe true
+        // await(job.execute).message shouldBe "Job with job2 cannot aquire mongo lock, not running"
+        // await(job.isRunning)       shouldBe true
 
-        job.continueExecution()
+        // job.continueExecution()
 
-        await(pausedExecution).message shouldBe "Job with job2 run and completed with result 1"
+        // await(pausedExecution).message shouldBe "Job with job2 run and completed with result 1"
 
-        await(job.isRunning)           shouldBe false
+        // await(job.isRunning)           shouldBe false
+
+
+
 
         // pausedExecution.isCompleted     shouldBe false
         // job.isRunning.futureValue       shouldBe true
