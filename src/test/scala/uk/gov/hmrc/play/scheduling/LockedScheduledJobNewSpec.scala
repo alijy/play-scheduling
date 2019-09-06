@@ -29,7 +29,7 @@ import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport, ReactiveRepository}
 import uk.gov.hmrc.play.scheduling.LockedScheduledJob
 import uk.gov.hmrc.time.DateTimeUtils
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Promise}
 import scala.concurrent.duration.FiniteDuration
 
 
@@ -83,43 +83,49 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
     def executions: Int = executionCount.get()
     override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
 
-     //   val f = Future {
-            Logger.debug("****: Before await")
-            start.await()
-            Logger.debug("****: After await")
-      //  }
-       // await(f)
-      //sdf
+
+      Future {
+        //   val f = Future {
+        Logger.debug(s"****: executeInLock thread ${Thread.currentThread().getName}")
+        Logger.debug("****: Before await")
+        start.await()
+        Logger.debug("****: After await")
+        //  }
+        // await(f)
+        //sdf
 
         val r = Result(executionCount.incrementAndGet().toString)
         Logger.debug("****: After result")
-        Future.successful(r)
-      r
+        //Future.successful(r)
+        r
+
+      }
+
     }
 
-        //Future {
-      //     val thread = new Thread {
-      //         override def run(): Unit = {
-      //             Logger.debug("****: Before await")
-      //             //latch.await()
-      //             self.start.await()
-      //             Logger.debug("****: After await")
-      //             Logger.debug("****: After result")
-      //         }
+    //Future {
+    //     val thread = new Thread {
+    //         override def run(): Unit = {
+    //             Logger.debug("****: Before await")
+    //             //latch.await()
+    //             self.start.await()
+    //             Logger.debug("****: After await")
+    //             Logger.debug("****: After result")
+    //         }
 
-      //     }
-      //   thread.start
-      //     val r = Result(executionCount.incrementAndGet().toString)
-      //     Future.successful(r)
-      // }
-      //Thread.sleep(300)
-      //Logger.debug("****: Before await")
-      // start.await()
-      //Logger.debug("****: After await")
-      //val r=Result(executionCount.incrementAndGet().toString)
-      //Logger.debug("****: After result")
-      ///r
-      //}
+    //     }
+    //   thread.start
+    //     val r = Result(executionCount.incrementAndGet().toString)
+    //     Future.successful(r)
+    // }
+    //Thread.sleep(300)
+    //Logger.debug("****: Before await")
+    // start.await()
+    //Logger.debug("****: After await")
+    //val r=Result(executionCount.incrementAndGet().toString)
+    //Logger.debug("****: After result")
+    ///r
+    //}
 
 
     override def initialDelay = FiniteDuration(1, TimeUnit.MINUTES)
@@ -139,6 +145,7 @@ class LockRepositorySpec extends WordSpecLike with Matchers with MongoSpecSuppor
     // }
     "not allow job to run in parallel" in {
 
+      Logger.debug(s"****: test thread ${Thread.currentThread().getName}")
       val latch = new CountDownLatch(1)
       val job = new SimpleJob("job2", repo, latch)
 
